@@ -24,7 +24,7 @@ export class TodosService {
   async findAll(query: QueryTodoDto, userId: string) {
   const { limit, offset, search, status } = query;
 
-  const filter: any = { user: userId }; // chỉ lấy todo của user đang đăng nhập
+  const filter: any = { user: userId };
 
   if (search) {
     filter.$or = [

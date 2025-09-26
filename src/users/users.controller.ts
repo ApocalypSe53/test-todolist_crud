@@ -26,12 +26,10 @@ export class UsersController {
   async remove(@Param('id') id: string, @Request() req: any) {
     const currentUser = req.user;
 
-    // Admin có quyền xoá tất cả
     if (currentUser.role === UserRole.ADMIN) {
       return this.usersService.remove(id);
     }
 
-    // User chỉ được xoá chính mình
     if (currentUser.userId === id) {
       return this.usersService.remove(id);
     }

@@ -8,7 +8,7 @@ import { QueryTodoDto } from './dto/query-todo.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
 @Controller('todos')
-@UseGuards(JwtAuthGuard) // bảo vệ toàn bộ controller
+@UseGuards(JwtAuthGuard)
 export class TodosController {
   constructor(private readonly todosService: TodosService) {}
 
