@@ -1,5 +1,6 @@
 // src/todos/dto/update-todo.dto.ts
-import { IsString, IsOptional } from 'class-validator';
+import { IsString, IsOptional, IsEnum } from 'class-validator';
+import { TodoStatus } from 'src/common/enums/todo-status.enum';
 
 export class UpdateTodoDto {
   @IsOptional()
@@ -11,6 +12,6 @@ export class UpdateTodoDto {
   content?: string;
 
   @IsOptional()
-  @IsString()
-  status?: string;
+  @IsEnum(TodoStatus)
+    status?: TodoStatus;
 }

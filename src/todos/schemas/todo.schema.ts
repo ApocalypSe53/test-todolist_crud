@@ -1,6 +1,8 @@
 // src/todos/schemas/todo.schema.ts
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document } from 'mongoose';
+import { TodoStatus } from '../../common/enums/todo-status.enum';
+import * as mongoose from 'mongoose';
 
 export type TodoDocument = Todo & Document;
 
@@ -12,8 +14,11 @@ export class Todo {
   @Prop({ required: true })
   content: string;
 
-  @Prop({ default: 'pending', enum: ['pending', 'in-progress', 'done'] })
-  status: string;
+  @Prop({ default: TodoStatus.PENDING, enum: Object.values(TodoStatus) })
+  status: TodoStatus;
+
+   @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'User' })
+  user: string;
 
   @Prop()
   createdAt: Date;

@@ -7,75 +7,82 @@ import { CreateTodoDto } from './dto/create-todo.dto';
 import { UpdateTodoDto } from './dto/update-todo.dto';
 import { UpdateStatusDto } from './dto/update-status.dto';
 import { QueryTodoDto } from './dto/query-todo.dto';
+import { TodoStatus } from '../common/enums/todo-status.enum';
 
 @Injectable()
 export class TodosService {
   constructor(@InjectModel(Todo.name) private todoModel: Model<TodoDocument>) {}
 
-  async create(dto: CreateTodoDto): Promise<Todo> {
-    const created = new this.todoModel(dto);
-    return created.save();
+  async create(dto: CreateTodoDto, userId: string): Promise<Todo> {
+  const created = new this.todoModel({
+    ...dto,
+    user: userId,
+  });
+  return created.save();
+}
+
+  async findAll(query: QueryTodoDto, userId: string) {
+  const { limit, offset, search, status } = query;
+
+  const filter: any = { user: userId }; // chỉ lấy todo của user đang đăng nhập
+
+  if (search) {
+    filter.$or = [
+      { title: { $regex: search, $options: 'i' } },
+      { content: { $regex: search, $options: 'i' } },
+    ];
+  }
+  if (status) {
+    filter.status = status as TodoStatus;
   }
 
-  async findAll(query: QueryTodoDto) {
-    const { limit, offset, search, status } = query;
+  const [items, total] = await Promise.all([
+    this.todoModel.find(filter).skip(offset).limit(limit).exec(),
+    this.todoModel.countDocuments(filter).exec(),
+  ]);
 
-    const filter: any = {};
-    if (search) {
-      filter.$or = [
-        { title: { $regex: search, $options: 'i' } },
-        { content: { $regex: search, $options: 'i' } },
-      ];
-    }
-    if (status) {
-      filter.status = status;
-    }
-
-    const [items, total] = await Promise.all([
-      this.todoModel.find(filter).skip(offset).limit(limit).exec(),
-      this.todoModel.countDocuments(filter).exec(),
-    ]);
-
-    return {
-      statusCode: 200,
-      data: {
-        items,
-        meta: {
-          limit,
-          offset,
-          total,
-          totalPages: limit > 0 ? Math.ceil(total / limit) : null,
-        },
+  return {
+    statusCode: 200,
+    data: {
+      items,
+      meta: {
+        limit,
+        offset,
+        total,
+        totalPages: limit > 0 ? Math.ceil(total / limit) : null,
       },
-    };
-  }
+    },
+  };
+}
 
-  async findOne(id: string): Promise<Todo> {
-    const todo = await this.todoModel.findById(id).exec();
-    if (!todo) throw new NotFoundException(`Todo with id ${id} not found`);
-    return todo;
-  }
+  async findOne(id: string, userId: string): Promise<Todo> {
+  const todo = await this.todoModel.findOne({ _id: id, user: userId }).exec();
+  if (!todo) throw new NotFoundException(`Todo with id ${id} not found`);
+  return todo;
+}
 
-  async update(id: string, dto: UpdateTodoDto): Promise<Todo> {
-    const updated = await this.todoModel.findByIdAndUpdate(id, dto, {
-      new: true,
-    });
-    if (!updated) throw new NotFoundException(`Todo with id ${id} not found`);
-    return updated;
-  }
+async update(id: string, dto: UpdateTodoDto, userId: string): Promise<Todo> {
+  const updated = await this.todoModel.findOneAndUpdate(
+    { _id: id, user: userId },
+    dto,
+    { new: true },
+  );
+  if (!updated) throw new NotFoundException(`Todo with id ${id} not found`);
+  return updated;
+}
 
-  async updateStatus(id: string, dto: UpdateStatusDto): Promise<Todo> {
-    const updated = await this.todoModel.findByIdAndUpdate(
-      id,
-      { status: dto.status },
-      { new: true },
-    );
-    if (!updated) throw new NotFoundException(`Todo with id ${id} not found`);
-    return updated;
-  }
+async updateStatus(id: string, dto: UpdateStatusDto, userId: string): Promise<Todo> {
+  const updated = await this.todoModel.findOneAndUpdate(
+    { _id: id, user: userId },
+    { status: dto.status },
+    { new: true },
+  );
+  if (!updated) throw new NotFoundException(`Todo with id ${id} not found`);
+  return updated;
+}
 
-  async remove(id: string): Promise<void> {
-    const deleted = await this.todoModel.findByIdAndDelete(id);
-    if (!deleted) throw new NotFoundException(`Todo with id ${id} not found`);
-  }
+async remove(id: string, userId: string): Promise<void> {
+  const deleted = await this.todoModel.findOneAndDelete({ _id: id, user: userId });
+  if (!deleted) throw new NotFoundException(`Todo with id ${id} not found`);
+}
 }
